@@ -1,0 +1,36 @@
+# Node.js
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+
+# Build output
+dist/
+build/
+
+# Dependency directories
+jspm_packages/
+typings/
+
+# Yarn
+yarn-error.log
+
+# Optional: IDE/Editor specific files
+.vscode/
+.idea/
+
+# Optional: Configuration files
+*.code-workspace
+*.code-workspace.backup
+
+# Optional: Testing
+coverage/

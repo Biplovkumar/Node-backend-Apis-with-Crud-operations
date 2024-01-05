@@ -1,14 +1,18 @@
 
 const express = require("express");
+const mongoose = require('mongoose');
+const multer = require("multer");
+const path = require('path');
+const Jwt = require('jsonwebtoken');
+
 require("./db/config");
 const User = require('./db/User');
 const Product = require("./db/Product")
-
-const Jwt = require('jsonwebtoken');
 const jwtKey = 'e-com';
 
 const app = express();
 const cors = require("cors");
+
 const port = 4000
 
 app.use(express.json());
@@ -113,6 +117,87 @@ app.get("/search/:key", verityToken, async (req, resp) => {
     });
     resp.send(result);
 })
+
+//Update profile
+app.put("/user/:id", verityToken, async (req, resp) => {
+  console.log('req :', req);
+let result = await User.updateOne(
+  { _id: req.params.id },
+  { $set: req.body }
+)
+resp.send(result)
+});
+
+// Set up Multer storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Set the destination folder where the file will be saved
+  },
+  filename: (req, file, cb) => {
+    // Set the filename to be the original name of the file
+     cb(null, file?.originalname.split('.')[0]  + "_" + Date.now() + "." + file?.mimetype.split('/')[1])
+  },
+});
+
+const upload = multer({ storage: storage });
+
+// Handle POST requests with file uploads
+app.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    // const profileImage = req?.file?.filename;
+    res.status(201).json({ message: 'Image uploaded successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+
+// Handle update user with file uploads
+app.put('/updateUser/:id', verityToken, upload.single('profileImage'), async (req, res) => {
+    try {
+    const id = req.params.id; 
+    const profileImage = req?.file?.filename;
+    const updatedUserData = { $set: req.body, profileImage };
+    let validID = mongoose.Types.ObjectId.isValid(id);
+    if (!validID) { return res.status(401).json({  result: 'Enter valid ID' });}
+
+    const result = await User.findByIdAndUpdate(id, updatedUserData, { new: true });
+    if (!result) { return res.status(404).json({ result: 'User not found' })}
+
+    res.send(result)
+    // Save user with profile image to the database
+    // const {name, email, password} = req.body;
+    // const newUser = new User({name, email, password, profileImage });
+    // await newUser.save();
+    // res.status(201).json({ message: 'User created successfully' });
+   } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+
+//get perticular User detail
+app.get("/user/:id", verityToken, async (req, resp) => {
+  let result = await User.findById(req.params.id)
+  if (result) {
+      result = result.toObject();
+      delete result.password
+      resp.send(result)
+  } else {
+      resp.send({ "result": 'User not found.' })
+  }
+})
+
+
+// http://localhost:4000/image/name
+// Define a route to serve the saved image
+app.get('/image/:name', (req, res) => {
+  const imageName = req.params.name; 
+  // Replace with your actual image file name
+  res.sendFile(path.join(`${__dirname}/uploads/`, imageName));
+});
 
 //Verify token
 function verityToken(req, resp, next){
