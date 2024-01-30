@@ -19,9 +19,14 @@ app.use(express.json());
 app.use(cors());
 
 app.post("/register", async (req, resp) => {
- if (!req.body.name || !req.body.email ||  !req.body.password) {
+  const {firstName, lastName, email, mobile, password, gender, dateOfBirth, address, zipcode} = req.body
+ if (!firstName || !lastName || !email || !mobile || !password || !gender || !dateOfBirth || !address || !zipcode) {
     return resp.status(400).send({ result: "All fields are required"});
   }else{
+    const doesEmailExist = await User.findOne({ email: req.body.email });
+    if (doesEmailExist) {
+    resp.status(409).send({ result:"Email already exists"}); 
+   }else{
     let user = new User(req.body);
     let result = await user.save();
     result = result.toObject();
@@ -32,7 +37,8 @@ app.post("/register", async (req, resp) => {
         }
         resp.send({result,auth:token})
     })
-   }
+  }
+}
 })
 
 app.post("/login", async (req, resp) => {
@@ -162,10 +168,16 @@ app.put('/updateUser/:id', verityToken, upload.single('profileImage'), async (re
     let validID = mongoose.Types.ObjectId.isValid(id);
     if (!validID) { return res.status(401).json({  result: 'Enter valid ID' });}
 
-    const result = await User.findByIdAndUpdate(id, updatedUserData, { new: true });
+    let result = await User.findByIdAndUpdate(id, updatedUserData, { new: true });
     if (!result) { return res.status(404).json({ result: 'User not found' })}
-
-    res.send(result)
+    result = result.toObject();
+    delete result.password
+    Jwt.sign({result}, jwtKey, {expiresIn:"2h"},(err,token)=>{
+        if(err){
+            res.status(401).send({ result:"Something went wrong"}); 
+        }
+        res.send({result,auth:token})
+    })
     // Save user with profile image to the database
     // const {name, email, password} = req.body;
     // const newUser = new User({name, email, password, profileImage });
