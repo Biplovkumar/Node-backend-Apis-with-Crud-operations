@@ -127,7 +127,6 @@ app.get("/search/:key", verityToken, async (req, resp) => {
 
 //Update profile
 app.put("/user/:id", verityToken, async (req, resp) => {
-  console.log('req :', req);
 let result = await User.updateOne(
   { _id: req.params.id },
   { $set: req.body }
