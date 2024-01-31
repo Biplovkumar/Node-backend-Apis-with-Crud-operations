@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const multer = require("multer");
 const path = require('path');
 const Jwt = require('jsonwebtoken');
+const fs = require('fs');
 
 require("./db/config");
 const User = require('./db/User');
@@ -207,8 +208,18 @@ app.get("/user/:id", verityToken, async (req, resp) => {
 // Define a route to serve the saved image
 app.get('/image/:name', (req, res) => {
   const imageName = req.params.name; 
-  // Replace with your actual image file name
-  res.sendFile(path.join(`${__dirname}/uploads/`, imageName));
+// Replace with your actual image file name
+const filePath = path.join(`${__dirname}/uploads/`, imageName).split("%20").join(" ");
+try {
+    //Checking if the path exists
+   const exists =  fs.existsSync(filePath);
+   if (!exists) {
+      res.status(404).json({ result: 'Image not found' })
+      return false;
+    }else{
+      res.sendFile(path.join(`${__dirname}/uploads/`, imageName));
+    }
+    } catch (error) {res.status(404).json({ result: error })}
 });
 
 //Verify token
