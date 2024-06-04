@@ -53,6 +53,8 @@ app.post("/login", async (req, resp) => {
                 if(err){
                     resp.status(401).send({ result:"Something went wrong"});
                 }
+                let fullUrl = user && user.profileImage ? req.protocol + '://' + req.get('host')+'/image/'+user.profileImage: null
+                user.profileImage = fullUrl;
                 resp.send({user,auth:token})
             })
         } else {
@@ -176,6 +178,8 @@ app.put('/updateUser/:id', verityToken, upload.single('profileImage'), async (re
         if(err){
             res.status(401).send({ result:"Something went wrong"}); 
         }
+        let fullUrl = result && result.profileImage ? req.protocol + '://' + req.get('host')+'/image/'+result.profileImage: null
+        result.profileImage = fullUrl;
         res.send({result,auth:token})
     })
     // Save user with profile image to the database
@@ -196,6 +200,8 @@ app.get("/user/:id", verityToken, async (req, resp) => {
   if (result) {
       result = result.toObject();
       delete result.password
+      let fullUrl = result && result.profileImage ? req.protocol + '://' + req.get('host')+'/image/'+result.profileImage: null
+      result.profileImage = fullUrl;
       resp.send(result)
   } else {
       resp.send({ "result": 'User not found.' })
