@@ -20,67 +20,67 @@ app.use(express.json());
 app.use(cors());
 
 app.post("/register", async (req, resp) => {
-  const {firstName, lastName, email, mobile, password, gender, dateOfBirth, address, zipcode} = req.body
- if (!firstName || !lastName || !email || !mobile || !password || !gender || !dateOfBirth || !address || !zipcode) {
-    return resp.status(400).send({ result: "All fields are required"});
-  }else{
+  const { firstName, lastName, email, mobile, password, gender, dateOfBirth, address, zipcode } = req.body
+  if (!firstName || !lastName || !email || !mobile || !password || !gender || !dateOfBirth || !address || !zipcode) {
+    return resp.status(400).send({ result: "All fields are required" });
+  } else {
     const doesEmailExist = await User.findOne({ email: req.body.email });
     if (doesEmailExist) {
-    resp.status(409).send({ result:"Email already exists"}); 
-   }else{
-    let user = new User(req.body);
-    let result = await user.save();
-    result = result.toObject();
-    delete result.password
-    Jwt.sign({result}, jwtKey, {expiresIn:"2h"},(err,token)=>{
-        if(err){
-            resp.status(401).send({ result:"Something went wrong"}); 
+      resp.status(409).send({ result: "Email already exists" });
+    } else {
+      let user = new User(req.body);
+      let result = await user.save();
+      result = result.toObject();
+      delete result.password
+      Jwt.sign({ result }, jwtKey, { expiresIn: "100d" }, (err, token) => {
+        if (err) {
+          resp.status(401).send({ result: "Something went wrong" });
         }
-        resp.send({result,auth:token})
-    })
+        resp.send({ result, auth: token })
+      })
+    }
   }
-}
 })
 
 app.post("/login", async (req, resp) => {
-  if (!req.body.email ||  !req.body.password) {
-       resp.status(400).send({ result:"Enter correct details"});
-  }else{
-        let user = await User.findOne(req.body).select("-password");
+  if (!req.body.email || !req.body.password) {
+    resp.status(400).send({ result: "Enter correct details" });
+  } else {
+    let user = await User.findOne(req.body).select("-password");
 
-        if (user) {
-            Jwt.sign({user}, jwtKey, {expiresIn:"2h"},(err,token)=>{
-                if(err){
-                    resp.status(401).send({ result:"Something went wrong"});
-                }
-                let fullUrl = user && user.profileImage ? req.protocol + '://' + req.get('host')+'/image/'+user.profileImage: null
-                user.profileImage = fullUrl;
-                resp.send({user,auth:token})
-            })
-        } else {
-            resp.status(400).send({ result:"No User found"});
+    if (user) {
+      Jwt.sign({ user }, jwtKey, { expiresIn: "100d" }, (err, token) => {
+        if (err) {
+          resp.status(401).send({ result: "Something went wrong" });
         }
+        let fullUrl = user && user.profileImage ? req.protocol + '://' + req.get('host') + '/image/' + user.profileImage : null
+        user.profileImage = fullUrl;
+        resp.send({ result: user, auth: token })
+      })
+    } else {
+      resp.status(400).send({ result: "No User found" });
     }
+  }
 });
 
 //Add product
 app.post("/add-product", verityToken, async (req, resp) => {
-if (!req.body.name ||  !req.body.price || !req.body.category ||  !req.body.company) {
-    resp.status(400).send({ result:"Enter correct details"});
-  }else{
-  let product = new Product(req.body);
-  let result = await product.save();
-  resp.send(result);
-}
+  if (!req.body.name || !req.body.price || !req.body.category || !req.body.company) {
+    resp.status(400).send({ result: "Enter correct details" });
+  } else {
+    let product = new Product(req.body);
+    let result = await product.save();
+    resp.send(result);
+  }
 });
 
 //Get all products
 app.get("/products", verityToken, async (req, resp) => {
   const products = await Product.find();
   if (products.length > 0) {
-      resp.send(products)
+    resp.send(products)
   } else {
-      resp.send({ result: "No Product found" })
+    resp.send({ result: "No Product found" })
   }
 });
 
@@ -94,46 +94,46 @@ app.delete("/product/:id", verityToken, async (req, resp) => {
 app.get("/product/:id", verityToken, async (req, resp) => {
   let result = await Product.findOne({ _id: req.params.id })
   if (result) {
-      resp.send(result)
+    resp.send(result)
   } else {
-      resp.send({ "result": "No Record Found." })
+    resp.send({ "result": "No Record Found." })
   }
 })
 
 //Update perticular product
 app.put("/product/:id", verityToken, async (req, resp) => {
-let result = await Product.updateOne(
-  { _id: req.params.id },
-  { $set: req.body }
-)
-resp.send(result)
+  let result = await Product.updateOne(
+    { _id: req.params.id },
+    { $set: req.body }
+  )
+  resp.send(result)
 });
 
 //Search product with key
 app.get("/search/:key", verityToken, async (req, resp) => {
-    let result = await Product.find({
-        "$or": [
-            {
-                name: { $regex: req.params.key }  
-            },
-            {
-                company: { $regex: req.params.key }
-            },
-            {
-                category: { $regex: req.params.key }
-            }
-        ]
-    });
-    resp.send(result);
+  let result = await Product.find({
+    "$or": [
+      {
+        name: { $regex: req.params.key }
+      },
+      {
+        company: { $regex: req.params.key }
+      },
+      {
+        category: { $regex: req.params.key }
+      }
+    ]
+  });
+  resp.send(result);
 })
 
 //Update profile
 app.put("/user/:id", verityToken, async (req, resp) => {
-let result = await User.updateOne(
-  { _id: req.params.id },
-  { $set: req.body }
-)
-resp.send(result)
+  let result = await User.updateOne(
+    { _id: req.params.id },
+    { $set: req.body }
+  )
+  resp.send(result)
 });
 
 // Set up Multer storage
@@ -143,7 +143,7 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Set the filename to be the original name of the file
-     cb(null, file?.originalname.split('.')[0]  + "_" + Date.now() + "." + file?.mimetype.split('/')[1])
+    cb(null, file?.originalname.split('.')[0] + "_" + Date.now() + "." + file?.mimetype.split('/')[1])
   },
 });
 
@@ -163,31 +163,31 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
 // Handle update user with file uploads
 app.put('/updateUser/:id', verityToken, upload.single('profileImage'), async (req, res) => {
-    try {
-    const id = req.params.id; 
+  try {
+    const id = req.params.id;
     const profileImage = req?.file?.filename;
     const updatedUserData = { $set: req.body, profileImage };
     let validID = mongoose.Types.ObjectId.isValid(id);
-    if (!validID) { return res.status(401).json({  result: 'Enter valid ID' });}
+    if (!validID) { return res.status(401).json({ result: 'Enter valid ID' }); }
 
     let result = await User.findByIdAndUpdate(id, updatedUserData, { new: true });
-    if (!result) { return res.status(404).json({ result: 'User not found' })}
+    if (!result) { return res.status(404).json({ result: 'User not found' }) }
     result = result.toObject();
     delete result.password
-    Jwt.sign({result}, jwtKey, {expiresIn:"2h"},(err,token)=>{
-        if(err){
-            res.status(401).send({ result:"Something went wrong"}); 
-        }
-        let fullUrl = result && result.profileImage ? req.protocol + '://' + req.get('host')+'/image/'+result.profileImage: null
-        result.profileImage = fullUrl;
-        res.send({result,auth:token})
+    Jwt.sign({ result }, jwtKey, { expiresIn: "100d" }, (err, token) => {
+      if (err) {
+        res.status(401).send({ result: "Something went wrong" });
+      }
+      let fullUrl = result && result.profileImage ? req.protocol + '://' + req.get('host') + '/image/' + result.profileImage : null
+      result.profileImage = fullUrl;
+      res.send({ result, auth: token })
     })
     // Save user with profile image to the database
     // const {name, email, password} = req.body;
     // const newUser = new User({name, email, password, profileImage });
     // await newUser.save();
     // res.status(201).json({ message: 'User created successfully' });
-   } catch (error) {
+  } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
@@ -198,13 +198,13 @@ app.put('/updateUser/:id', verityToken, upload.single('profileImage'), async (re
 app.get("/user/:id", verityToken, async (req, resp) => {
   let result = await User.findById(req.params.id)
   if (result) {
-      result = result.toObject();
-      delete result.password
-      let fullUrl = result && result.profileImage ? req.protocol + '://' + req.get('host')+'/image/'+result.profileImage: null
-      result.profileImage = fullUrl;
-      resp.send(result)
+    result = result.toObject();
+    delete result.password
+    let fullUrl = result && result.profileImage ? req.protocol + '://' + req.get('host') + '/image/' + result.profileImage : null
+    result.profileImage = fullUrl;
+    resp.send(result)
   } else {
-      resp.send({ "result": 'User not found.' })
+    resp.send({ "result": 'User not found.' })
   }
 })
 
@@ -212,36 +212,37 @@ app.get("/user/:id", verityToken, async (req, resp) => {
 // http://localhost:4000/image/name
 // Define a route to serve the saved image
 app.get('/image/:name', (req, res) => {
-  const imageName = req.params.name; 
-// Replace with your actual image file name
-const filePath = path.join(`${__dirname}/uploads/`, imageName).split("%20").join(" ");
-try {
+  const imageName = req.params.name;
+  // Replace with your actual image file name
+  const filePath = path.join(`${__dirname}/uploads/`, imageName).split("%20").join(" ");
+  try {
     //Checking if the path exists
-   const exists =  fs.existsSync(filePath);
-   if (!exists) {
+    const exists = fs.existsSync(filePath);
+    if (!exists) {
       res.status(404).json({ result: 'Image not found' })
       return false;
-    }else{
+    } else {
       res.sendFile(path.join(`${__dirname}/uploads/`, imageName));
     }
-    } catch (error) {res.status(404).json({ result: error })}
+  } catch (error) { res.status(404).json({ result: error }) }
 });
 
 //Verify token
-function verityToken(req, resp, next){
-let token = req.headers['authorization'];
-if(token){
-token = token.split(' ')[1];
-Jwt.verify(token, jwtKey, (err, valid)=>{
-    if(err){
-    resp.status(401).send({result: 'Please provide a valid token'})
-    }else{
-    next();
-    }
-})}
- else{
-      resp.status(403).send({result: 'Please provide a token'})
-     }
+function verityToken(req, resp, next) {
+  let token = req.headers['authorization'];
+  if (token) {
+    token = token.split(' ')[1];
+    Jwt.verify(token, jwtKey, (err, valid) => {
+      if (err) {
+        resp.status(401).send({ result: 'Please provide a valid token' })
+      } else {
+        next();
+      }
+    })
+  }
+  else {
+    resp.status(403).send({ result: 'Please provide a token' })
+  }
 }
 
 //Verify all filled
@@ -260,16 +261,16 @@ function areAllFieldsFilled(obj) {
 app.post("/test", (req, resp) => {
   if (!req.body || Object.keys(req.body).length === 0) {
     return resp.status(400).send({ result: "No data found" });
-  }else{
-// Generate a random token by 6 digit values
-const randomNumber = Math.floor(Math.random() * 900000) + 100000;
-const concatenatedObject = { ...req.body, ...{value:randomNumber} };
-resp.send(concatenatedObject);
+  } else {
+    // Generate a random token by 6 digit values
+    const randomNumber = Math.floor(Math.random() * 900000) + 100000;
+    const concatenatedObject = { ...req.body, ...{ value: randomNumber } };
+    resp.send(concatenatedObject);
   }
 });
 
 //This is for testing purpose
-  app.get('/', (req, res) => {
+app.get('/', (req, res) => {
   res.send('Hello World!')
 })
 
