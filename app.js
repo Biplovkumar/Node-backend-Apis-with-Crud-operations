@@ -48,7 +48,7 @@ const uploadFields = [
 
 // If files are uploaded, update the file paths with dynamic URLs
 const imgPrefixUrl = (req) => req.protocol + '://' + req.get('host') + '/image/';
-const removeUploadsDir = (filePath) => filePath.replace('uploads/', '');
+const removeUploadsDir = (filePath) => filePath && filePath.includes('uploads\\') ? filePath.replace('uploads\\', '') : filePath.replace('uploads/', '');
 
 const validateRequiredFields = (data, fields) => {
   for (const field of fields) {
@@ -192,17 +192,22 @@ app.post("/add-product", verifyToken, upload.fields(uploadFields), async (req, r
 
 
 //Get all products
-app.get("/products", verifyToken, async (req, resp) => {
+app.get("/products", async (req, resp) => {
   const products = await Product.find();
   if (products.length > 0) {
-    resp.send(products)
+    const updatedProducts = products.map(item => {
+      if (item.thumbnail) item.thumbnail = imgPrefixUrl(req) + removeUploadsDir(item.thumbnail);
+      if (item.images && item.images.length) item.images = item.images.map(image => imgPrefixUrl(req) + removeUploadsDir(image));
+      return item;
+    });
+    resp.send(updatedProducts)
   } else {
     resp.send({ result: "No Product found" })
   }
 });
 
 //Delete one product
-app.delete("/product/:id", verifyToken, async (req, resp) => {
+app.delete("/product/:id", async (req, resp) => {
   let result = await Product.deleteOne({ _id: req.params.id });
   resp.send(result)
 });
